@@ -43,7 +43,7 @@ _PRESETS = {
     "Gujarat CS": {
         "name": "Vayu-2", "landfall": "Veraval",
         "wind_kmh": 100, "radius_km": 65, "pop_at_risk_k": 120,
-        "lat0": 21.5, "lon0": 70.5, "lat_land": 20.9, "lon_land": 70.4,
+        "lat0": 19.6, "lon0": 69.2, "lat_land": 20.9, "lon_land": 70.4,
         "districts": [
             {"name": "Gir Somnath",  "lat": 20.91, "lon": 70.36},
             {"name": "Junagadh",     "lat": 21.52, "lon": 70.46},

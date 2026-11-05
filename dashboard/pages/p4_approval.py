@@ -24,8 +24,12 @@ def render() -> None:
 
     if results and results.get("pending_approval"):
         evac_plan = results.get("evacuation_plan", "No plan text available.")
-        shelter   = ((results.get("shelter_result") or {})
-                     .get("best_shelter", "—"))
+        shelter_result = results.get("shelter_result") or {}
+        selected_shelters = shelter_result.get("selected", [])
+        if selected_shelters:
+            shelter_list = ", ".join(str(s) for s in selected_shelters)
+        else:
+            shelter_list = shelter_result.get("best_shelter", "—")
         cd        = results.get("cyclone_data", scenario)
         wj        = results.get("weather_json", {})
 
@@ -34,7 +38,7 @@ def render() -> None:
         sms_text = (
             f"⚠️ CYCLONE ALERT: {cd.get('name','CYCLONE')} ({imd_cls}) "
             f"approaching {cd.get('landfall','coast')}. "
-            f"Evacuate NOW to {shelter}. Follow official routes. "
+            f"Evacuate NOW to: {shelter_list}. Follow official routes. "
             f"Wind {wj.get('peak_wind_kmh', cd.get('wind_kmh','?'))} km/h. "
             f"T-minus {wj.get('time_to_landfall_h','?')}h. Stay safe. #DisasterAlert"
         )

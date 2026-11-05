@@ -77,14 +77,13 @@ def _parse_json(raw: str, fallback: dict) -> dict:
     peak_wind = float(data.get("peak_wind_kmh") or fallback.get("wind_kmh", 120))
     data["imd_class"] = _wind_to_imd(peak_wind)
 
-    # (b) compute time_to_landfall_h if missing
-    if data.get("time_to_landfall_h") is None:
-        lat0 = float(fallback.get("lat0", data.get("landfall_lat", 19.8)))
-        lon0 = float(fallback.get("lon0", data.get("landfall_lon", 85.8)))
-        lat_land = float(data.get("landfall_lat", lat0))
-        lon_land = float(data.get("landfall_lon", lon0))
-        dist_km = _haversine_km(lat0, lon0, lat_land, lon_land)
-        data["time_to_landfall_h"] = round(dist_km / 15.0, 1)
+    # (b) always compute time_to_landfall_h from distance
+    lat0 = float(fallback.get("lat0", data.get("landfall_lat", 19.8)))
+    lon0 = float(fallback.get("lon0", data.get("landfall_lon", 85.8)))
+    lat_land = float(data.get("landfall_lat", lat0))
+    lon_land = float(data.get("landfall_lon", lon0))
+    dist_km = _haversine_km(lat0, lon0, lat_land, lon_land)
+    data["time_to_landfall_h"] = round(dist_km / 15.0, 1)
 
     # (c) compute storm_surge_m if missing
     if data.get("storm_surge_m") is None:

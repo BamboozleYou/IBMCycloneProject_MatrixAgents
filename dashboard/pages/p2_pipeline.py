@@ -85,6 +85,7 @@ def render() -> None:
             st.session_state["step_results"] = step_results
             progress.progress(100, "Pipeline complete ✅")
             st.success("Pipeline complete — see Approval & Logs.")
+            st.rerun()
         except Exception as exc:
             st.error(f"Pipeline error: {exc}")
             progress.progress(100)
