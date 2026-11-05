@@ -66,19 +66,39 @@ _PROVIDERS = {
     "Groq":              _key_set("GROQ_API_KEY"),
 }
 
+# ── IMD intensity scale ──────────────────────────────────────────────────────
+# wind_kmh → (IMD label, colour)
+_IMD_SCALE = [
+    (63,  "Depression",                "#42be65"),
+    (89,  "Deep Depression",           "#74c469"),
+    (117, "Cyclonic Storm",            "#f1c21b"),
+    (166, "Severe Cyclonic Storm",     "#ff832b"),
+    (221, "Very Severe Cyclonic Storm","#da1e28"),
+    (260, "Extremely Severe CyStorm",  "#a61f1f"),
+    (999, "Super Cyclonic Storm",      "#6929c4"),
+]
+
+def _imd_label(wind_kmh: float) -> tuple[str, str]:
+    """Return (IMD intensity label, colour) for a given 3-min sustained wind in km/h."""
+    for threshold, label, colour in _IMD_SCALE:
+        if wind_kmh <= threshold:
+            return label, colour
+    return _IMD_SCALE[-1][1], _IMD_SCALE[-1][2]
+
+
 # ── Scenario presets ────────────────────────────────────────────────────────
 _PRESETS = {
-    "Odisha Cat-3": {
+    "Odisha VSCS": {
         "name": "Fani-2", "category": 3, "landfall": "Odisha Coast",
         "wind_kmh": 185, "radius_km": 130, "pop_at_risk_k": 450,
         "lat0": 19.5, "lon0": 87.5, "lat_land": 19.8, "lon_land": 85.8,
     },
-    "Andhra Cat-2": {
+    "Andhra SCS": {
         "name": "Hudhud-2", "category": 2, "landfall": "Visakhapatnam",
         "wind_kmh": 140, "radius_km": 90, "pop_at_risk_k": 280,
         "lat0": 17.0, "lon0": 84.5, "lat_land": 17.7, "lon_land": 83.3,
     },
-    "Gujarat Cat-1": {
+    "Gujarat CS": {
         "name": "Vayu-2", "category": 1, "landfall": "Veraval",
         "wind_kmh": 100, "radius_km": 65, "pop_at_risk_k": 120,
         "lat0": 21.5, "lon0": 70.5, "lat_land": 20.9, "lon_land": 70.4,
@@ -140,10 +160,11 @@ def _render_kpi_row(results: dict | None, scenario: dict | None = None) -> None:
     except Exception:
         pass
 
+    imd_lbl, _ = _imd_label(float(cd.get("wind_kmh") or 0))
     cols = st.columns(8)
     items = [
         ("Cyclone",      cd.get("name", "—"),                  ""),
-        ("Category",     f"Cat-{cd.get('category', '—')}",     ""),
+        ("IMD Intensity", imd_lbl,                             ""),
         ("Max Wind",     f"{cd.get('wind_kmh', '—')} km/h",    ""),
         ("Landfall",     cd.get("landfall", "—"),               ""),
         ("Pop. at Risk", f"{cd.get('pop_at_risk_k', '—')} k",  ""),
@@ -240,7 +261,8 @@ if page == "🌩 Cyclone Detection":
     # Full track line
     fig_map.add_trace(go.Scattermapbox(
         lat=list(lats), lon=list(lons), mode="lines",
-        line=dict(color="#0F62FE", width=2, dash="dot"),
+        line=dict(color="#0F62FE", width=2),
+        opacity=0.5,
         name="Forecast track", hovertemplate="Lat %{lat:.2f} Lon %{lon:.2f}<extra></extra>",
     ))
 
@@ -276,7 +298,8 @@ if page == "🌩 Cyclone Detection":
 
     fig_map.add_trace(go.Scattermapbox(
         lat=circle_lats, lon=circle_lons, mode="lines",
-        line=dict(color="#ff832b", width=1, dash="dot"),
+        line=dict(color="#ff832b", width=1),
+        opacity=0.6,
         name=f"Impact radius ({radius} km)", hoverinfo="skip",
     ))
 
@@ -305,16 +328,17 @@ if page == "🌩 Cyclone Detection":
     col_g, col_l = st.columns([1, 2])
 
     with col_g:
-        st.subheader("Wind & Category")
+        st.subheader("Wind & IMD Intensity")
+        imd_lbl_now, imd_col_now = _imd_label(winds[step_idx])
         fig_gauge = go.Figure(go.Indicator(
             mode="gauge+number+delta",
             value=winds[step_idx],
             delta={"reference": winds[0], "suffix": " km/h"},
             number={"suffix": " km/h", "font": {"size": 28}},
-            title={"text": f"Cat-{category} — T+{t_idx}h"},
+            title={"text": f"{imd_lbl_now} — T+{t_idx}h"},
             gauge={
                 "axis": {"range": [0, 300], "tickcolor": "#8d8d8d"},
-                "bar": {"color": _CAT_COLOUR.get(category, "#ff832b")},
+                "bar": {"color": imd_col_now},
                 "bgcolor": "#161616",
                 "bordercolor": "#393939",
                 "steps": [
@@ -506,9 +530,9 @@ elif page == "⚛ Quantum Optimiser":
     _render_kpi_row(results, scenario)
     st.divider()
 
-    from mcp.qaoa_shelter import DEMO_SHELTERS, _brute_force
+    from mcp.qaoa_shelter import DEMO_SHELTERS, _brute_force, _load_shelters
 
-    shelters = DEMO_SHELTERS
+    shelters = _load_shelters()
     classical = _brute_force(shelters)
 
     try:
@@ -517,9 +541,11 @@ elif page == "⚛ Quantum Optimiser":
         qaoa_status = "✅ Ran on Qiskit Aer simulator"
     except Exception as exc:
         quantum = {
-            "best_shelter": classical["best_shelter"],
-            "method": "brute_force_fallback",
+            "best_shelter":    classical["best_shelter"],
+            "selected":        classical.get("selected", [classical["best_shelter"]]),
+            "method":          "brute_force_fallback",
             "objective_value": classical["objective_value"],
+            "sample_probs":    {},
         }
         qaoa_status = f"⚠️ Fallback ({exc.__class__.__name__}: {str(exc)[:60]})"
 
@@ -527,8 +553,10 @@ elif page == "⚛ Quantum Optimiser":
 
     # ── Metric cards ───────────────────────────────────────────────────────────
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("QAOA Best Shelter",      quantum["best_shelter"],   f"obj = {quantum['objective_value']:.0f}")
-    c2.metric("Classical Best Shelter", classical["best_shelter"], f"obj = {classical['objective_value']:.0f}")
+    c1.metric("QAOA Selected",          ", ".join(quantum.get("selected", [quantum["best_shelter"]])),
+                                        f"obj = {quantum['objective_value']:.0f}")
+    c2.metric("Classical Selected",     ", ".join(classical.get("selected", [classical["best_shelter"]])),
+                                        f"obj = {classical['objective_value']:.0f}")
     c3.metric("Agreement", "✅ Match" if match else "❌ Differs")
     c4.metric("QAOA Method", quantum["method"])
     st.caption(qaoa_status)
@@ -540,53 +568,79 @@ elif page == "⚛ Quantum Optimiser":
     # ── Objective value bar chart ─────────────────────────────────────────────
     with col_left:
         st.subheader("Objective Value per Shelter")
+        from mcp.qaoa_shelter import _objective, VILLAGE_ZONES, NUM_SELECT
         df_shelters = pd.DataFrame(shelters)
-        df_shelters["objective"] = df_shelters["capacity"] * df_shelters["score"]
-        df_shelters["chosen"] = df_shelters["name"] == quantum["best_shelter"]
-        colours = ["#0F62FE" if c else "#393939" for c in df_shelters["chosen"]]
+        df_shelters["objective"] = df_shelters.apply(
+            lambda row: _objective([row.to_dict()]), axis=1
+        )
+        selected_set = set(quantum.get("selected", [quantum["best_shelter"]]))
+        colours = ["#0F62FE" if n in selected_set else "#393939" for n in df_shelters["name"]]
 
         fig_obj = go.Figure(go.Bar(
             x=df_shelters["name"],
             y=df_shelters["objective"],
             marker_color=colours,
-            hovertemplate="%{x}<br>Objective: %{y:.0f}<extra></extra>",
+            hovertemplate="%{x}<br>Dist-score: %{y:.0f}<extra></extra>",
         ))
         fig_obj.update_layout(
             paper_bgcolor="#161616", plot_bgcolor="#0a0a0a",
             font=dict(color="#f4f4f4"),
             xaxis=dict(tickangle=-25, color="#8d8d8d"),
-            yaxis=dict(title="cap × score", color="#8d8d8d"),
+            yaxis=dict(title="pop × km (lower=better)", color="#8d8d8d"),
             height=320, margin=dict(l=10, r=10, t=10, b=80),
         )
         st.plotly_chart(fig_obj, use_container_width=True)
 
-    # ── Bitstring probability histogram ──────────────────────────────────────
+    # ── Bitstring probability histogram (real QAOA samples) ───────────────────
     with col_right:
         st.subheader("QAOA Bitstring Distribution")
-        import random, math
-        random.seed(42)
-        n = len(shelters)
-        # Simulated probabilities — chosen shelter's bitstring gets highest weight
-        chosen_idx = next(i for i, s in enumerate(shelters) if s["name"] == quantum["best_shelter"])
-        bitstrings = []
-        probs = []
-        for i in range(n):
-            bs = "0" * n
-            bs = bs[:i] + "1" + bs[i+1:]
-            bitstrings.append(bs)
-            probs.append(0.5 if i == chosen_idx else random.uniform(0.05, 0.25))
-        total = sum(probs)
-        probs = [p / total for p in probs]
+        sample_probs: dict[str, float] = quantum.get("sample_probs", {})
+
+        if sample_probs:
+            # Use real probabilities from MinimumEigenOptimizer
+            bitstrings = list(sample_probs.keys())
+            probs = list(sample_probs.values())
+        else:
+            # Fallback: uniform-ish distribution based on brute-force objective
+            import math as _math
+            selected_set_bf = set(classical.get("selected", []))
+            n = len(shelters)
+            # Score each 2-bit combination by inverse objective
+            from itertools import combinations as _comb
+            combos = list(_comb(range(n), NUM_SELECT))
+            raw_scores = []
+            for c in combos:
+                sel = [shelters[i] for i in c]
+                raw_scores.append(1.0 / max(_objective(sel), 1e-3))
+            total_s = sum(raw_scores)
+            bitstrings = []
+            probs = []
+            for idx, c in enumerate(combos):
+                bs = "".join("1" if i in c else "0" for i in range(n))
+                bitstrings.append(bs)
+                probs.append(raw_scores[idx] / total_s)
+
+        # Identify which bitstrings correspond to the selected combo
+        selected_names_q = set(quantum.get("selected", [quantum["best_shelter"]]))
+        selected_bs_idx = {
+            i for i, bs in enumerate(bitstrings)
+            if all(
+                (bs[j] == "1") == (shelters[j]["name"] in selected_names_q)
+                for j in range(len(shelters))
+            )
+        }
+        bar_colours = ["#0F62FE" if i in selected_bs_idx else "#393939"
+                       for i in range(len(bitstrings))]
 
         fig_hist = go.Figure(go.Bar(
             x=bitstrings, y=probs,
-            marker_color=["#0F62FE" if i == chosen_idx else "#393939" for i in range(n)],
-            hovertemplate="%{x}<br>P=%{y:.3f}<extra></extra>",
+            marker_color=bar_colours,
+            hovertemplate="%{x}<br>P=%{y:.4f}<extra></extra>",
         ))
         fig_hist.update_layout(
             paper_bgcolor="#161616", plot_bgcolor="#0a0a0a",
             font=dict(color="#f4f4f4"),
-            xaxis=dict(title="Bitstring", color="#8d8d8d", tickangle=-25),
+            xaxis=dict(title="Bitstring", color="#8d8d8d", tickangle=-45),
             yaxis=dict(title="Probability", color="#8d8d8d"),
             height=320, margin=dict(l=10, r=10, t=10, b=80),
         )
@@ -600,36 +654,46 @@ elif page == "⚛ Quantum Optimiser":
         from qiskit.primitives import Sampler
         from qiskit_optimization import QuadraticProgram
         from qiskit_optimization.converters import QuadraticProgramToQubo
+        from mcp.qaoa_shelter import VILLAGE_ZONES as _VZ, _haversine_km as _hav, NUM_SELECT as _NS
 
         n = len(shelters)
-        qp = QuadraticProgram(name="shelter_select")
+        qp = QuadraticProgram(name="shelter_cover")
         for i in range(n):
             qp.binary_var(name=f"x{i}")
-        linear = {f"x{i}": -s["capacity"] * s["score"] for i, s in enumerate(shelters)}
-        qp.minimize(linear=linear)
-        qp.linear_constraint(linear={f"x{i}": 1 for i in range(n)}, sense="==", rhs=1, name="pick_one")
+        avg_pop = sum(z["pop"] for z in _VZ) / len(_VZ)
+        linear_circ = {
+            f"x{i}": sum(_hav(z["lat"], z["lon"], float(s["lat"]), float(s["lon"])) for z in _VZ) / len(_VZ) * avg_pop
+            for i, s in enumerate(shelters)
+        }
+        qp.minimize(linear=linear_circ)
+        qp.linear_constraint(linear={f"x{i}": 1 for i in range(n)}, sense="==", rhs=_NS, name="pick_k")
 
         conv = QuadraticProgramToQubo()
         qubo = conv.convert(qp)
-        from qiskit_optimization.algorithms.minimum_eigen_optimizer import MinimumEigenOptimizer
         sampler = Sampler()
         qaoa_inst = QAOA(sampler=sampler, optimizer=COBYLA(), reps=1)
         circuit = qaoa_inst.ansatz
         st.code(str(circuit.draw(output="text")), language="text")
     except Exception as exc:
-        # Textual fallback
         n = len(shelters)
-        circuit_txt = f"q_0: ──H──Rz(γ)──Ry(β)──\n" + \
-                      "\n".join(f"q_{i}: ──H──Rz(γ)──Ry(β)──" for i in range(1, n)) + \
-                      f"\n\n(p=1, {n} qubits — {exc.__class__.__name__})"
+        circuit_txt = (
+            "q_0: ──H──Rz(γ)──Ry(β)──\n"
+            + "\n".join(f"q_{i}: ──H──Rz(γ)──Ry(β)──" for i in range(1, n))
+            + f"\n\n(p=1, {n} qubits — {exc.__class__.__name__})"
+        )
         st.code(circuit_txt, language="text")
 
     # ── Shelter candidates table ───────────────────────────────────────────────
     st.subheader("Shelter Candidates")
+    from mcp.qaoa_shelter import VILLAGE_ZONES as _VZ2, _haversine_km as _hav2
     df_disp = pd.DataFrame(shelters).rename(columns={
         "name": "Shelter", "capacity": "Capacity", "score": "Suitability Score"
     })
-    df_disp["Objective (cap×score)"] = df_disp["Capacity"] * df_disp["Suitability Score"]
+    df_disp["Avg dist to zones (km)"] = df_disp.apply(
+        lambda row: round(sum(_hav2(z["lat"], z["lon"], float(row["lat"]), float(row["lon"])) for z in _VZ2) / len(_VZ2), 1),
+        axis=1,
+    )
+    df_disp["Selected (QAOA)"] = df_disp["Shelter"].isin(quantum.get("selected", []))
     st.dataframe(df_disp, use_container_width=True, hide_index=True)
 
 
