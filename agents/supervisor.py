@@ -70,13 +70,28 @@ class Supervisor:
             for d in rag_docs
         )
 
-        # --- Step 1: WeatherTrack ---
-        track_summary = self._run_agent_with_retries(
+        # --- Step 1: WeatherTrack (returns JSON dict) ---
+        track_raw = self._run_agent_with_retries(
             self.weather_agent,
             input_text=str(cyclone_data),
             extra_context=rag_context,
         )
+        # weather agent now returns a dict; supervisor stored raw str via call_llm path
+        if isinstance(track_raw, dict):
+            weather_json = track_raw
+            track_summary = weather_json.get("summary", str(track_raw))
+        else:
+            from agents.weather_track import _parse_json
+            weather_json = _parse_json(track_raw, cyclone_data)
+            track_summary = weather_json.get("summary", track_raw)
         results["track_summary"] = track_summary
+        results["weather_json"]  = weather_json
+
+        # RAG: similar past cyclones
+        rag_docs2 = self.store.retrieve(
+            f"{weather_json.get('imd_class', '')} {cyclone_data.get('landfall', '')} cyclone", k=3
+        )
+        results["similar_cyclones"] = rag_docs2
 
         # --- Step 2: Impact ---
         impact_summary = self._run_agent_with_retries(
