@@ -1,0 +1,21 @@
+cyclone_id,name,year,basin,category,max_wind_kmh,min_pressure_hpa,landfall_region,landfall_lat,landfall_lon,duration_days,deaths,displaced_thousands,damage_usd_millions,label
+CYC-001,Amphan,2020,Bay of Bengal,SCS,240,920,West Bengal,21.5,87.3,7,128,4900,13600,severe
+CYC-002,Fani,2019,Bay of Bengal,SuCS,250,932,Odisha,19.8,85.8,8,89,1200,8100,severe
+CYC-003,Phailin,2013,Bay of Bengal,SuCS,215,940,Odisha,19.3,85.1,7,45,900,692,severe
+CYC-004,Hudhud,2014,Bay of Bengal,SuCS,185,950,Andhra Pradesh,17.7,83.3,9,124,600,1100,severe
+CYC-005,Ockhi,2017,Arabian Sea,SCS,195,976,Tamil Nadu / Kerala,8.5,76.9,12,218,200,450,severe
+CYC-006,Titli,2018,Bay of Bengal,SuCS,165,972,Andhra Pradesh,18.2,84.2,5,85,200,680,moderate
+CYC-007,Gaja,2018,Bay of Bengal,CS,130,986,Tamil Nadu,10.3,79.8,6,45,130,420,moderate
+CYC-008,Bulbul,2019,Bay of Bengal,SuCS,175,965,West Bengal,21.9,88.7,7,38,500,310,moderate
+CYC-009,Nisarga,2020,Arabian Sea,SuCS,110,988,Maharashtra,18.4,72.9,4,6,170,180,moderate
+CYC-010,Nivar,2020,Bay of Bengal,SuCS,130,976,Tamil Nadu,11.9,79.9,5,13,150,215,moderate
+CYC-011,Burevi,2020,Bay of Bengal,CS,90,996,Tamil Nadu,9.3,79.1,4,2,70,80,mild
+CYC-012,Tauktae,2021,Arabian Sea,ECS,185,950,Gujarat,21.6,71.5,8,197,1100,1250,severe
+CYC-013,Yaas,2021,Bay of Bengal,SuCS,155,967,Odisha,20.9,87.1,7,26,690,3000,moderate
+CYC-014,Gulab,2021,Bay of Bengal,CS,95,987,Andhra Pradesh,18.3,84.0,4,9,100,220,mild
+CYC-015,Shaheen,2021,Arabian Sea,SuCS,120,982,Oman / Gujarat,23.6,58.5,5,14,60,95,mild
+CYC-016,Jawad,2021,Bay of Bengal,DD,65,1000,Andhra Pradesh,14.7,80.3,3,1,40,30,mild
+CYC-017,Asani,2022,Bay of Bengal,SuCS,130,978,Andhra Pradesh,15.9,80.5,7,5,80,120,mild
+CYC-018,Sitrang,2022,Bay of Bengal,CS,110,990,Bangladesh,22.7,91.1,5,35,250,310,moderate
+CYC-019,Mandous,2022,Bay of Bengal,CS,95,988,Tamil Nadu,12.1,80.2,4,11,90,180,mild
+CYC-020,Biparjoy,2023,Arabian Sea,ECS,170,940,Gujarat,23.1,68.7,14,2,180,200,moderate

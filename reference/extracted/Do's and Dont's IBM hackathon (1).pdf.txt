@@ -1,0 +1,121 @@
+=== Page 1 ===
+Bengaluru Hackathon 2026 – Build Agentic AI Solutions with IBM Bob 
+Guidelines & Requirements-  
+1. Event Overview 
+The IBM Hackathon is a competitive innovation event where teams leverage IBM Bob, IBM 
+Granite models and IBM Cloud services to design, build, and deploy cloud-based solutions. 
+The objective is to solve real-world problem statements efficiently while demonstrating cloud 
+computing, Agentic AI, Generative AI and Machine Learning. 
+How can agentic AI technology improve the productivity of an important everyday activity? 
+Identify a real-world business process or task and present your innovative proof of concept 
+for how that activity could be streamlined using IBM’s watsonx.ai generative AI solution. IBM, 
+a pioneer in the tech industry, has been at the forefront of innovation for decades. Their 
+contributions span across various fields, including AI, cloud computing, and quantum 
+computing. IBM's cutting-edge technology and research continue to drive advancements in 
+multiple sectors. 
+2. General Guidelines 
+• 
+Participants will register in teams of up to 3 members, with each team representing a 
+college. 
+• 
+Participants must bring their own laptops with all required tools and software pre-
+installed, along with their own internet connection/data. Internet connectivity will not 
+be provided by the organizers. 
+• 
+The hackathon will have a fixed duration of 180 minutes, and all submissions must 
+be completed within the given timeframe. 
+• 
+Each team will get 7 Minutes to present + 3 minutes Q&A with Jury. 
+• 
+Teams must adhere to ethical standards—plagiarism, hard-coded results, or use of 
+unauthorized services is strictly prohibited. 
+3.Judging criteria will include:    
+Each submission will be judged on the following criteria with a maximum score of 20 points 
+and the final score being the average of the evaluators’ scores: 
+1)Completeness and Feasibility (5 points): 
+• How feasible is the solution? 
+• How fully has the idea been thought-out and planned? 
+• How complete is the proof-of-concept submitted? 
+• How clear is the application of IBM technology? 
+2)Creativity and Innovation (5 points): 
+• How unique and original was the approach in applying AI technology to address the 
+stated issue? 
+• Is the solution differentiated in the market?
+
+=== Page 2 ===
+3)Design and Usability (5 points): 
+• How good is the design, user experience, and ease of use of the solution? 
+• How quickly and easily could it be put to use in real-world scenarios and adopted by 
+target users? 
+4)Effectiveness and Efficiency (5 points): 
+• Does the solution address a high priority and relevant issue within the learning lab 
+theme? 
+• Does it achieve its goal effectively and efficiently? 
+• Can it achieve a measurable impact in the field? 
+• Does it have the potential to scale to more users or use cases? 
+Note- Organizers will provide problem statements on the event day. 
+4. Do’s & Don’ts 
+  Do’s 
+• 
+Ensure your team understands the problem statement thoroughly before starting. 
+• 
+Bring your own laptop, charger, and required accessories.  
+• 
+Ensure all required software, tools, accounts, and dependencies are installed and 
+tested before the hackathon.  
+• 
+Bring your own internet connection/mobile hotspot and sufficient data.  
+• 
+Use IBM Bob, IBM Granite LLM, and IBM Cloud as specified for the challenge.  
+• 
+Use appropriate and reliable datasets for your solution.  
+• 
+Clearly define the problem, solution approach, AI agents, workflow, and expected 
+impact.  
+• 
+Ensure your solution is functional, feasible, user-friendly, and scalable.  
+• 
+Maintain data privacy and responsible AI practices.  
+• 
+Keep regular backups of your code, datasets, and project files.  
+• 
+Document your approach, architecture diagram, and deployment steps clearly for the 
+Jury. 
+• 
+Collaborate efficiently and divide tasks among team members.  
+- One can be a team leader 
+- One can work on the PPT / Collation 
+• 
+Be prepared to demonstrate your working prototype to the evaluation panel.  
+  Don’ts 
+• 
+Do not depend on organizers for laptops, internet connectivity, or personal data.  
+• 
+Do not use unauthorized, copyrighted, confidential, or personally identifiable 
+data.  
+• 
+Do not submit a solution that is copied from another participant/team or an 
+existing project without meaningful originality.  
+• 
+Do not make unsupported claims about the accuracy or impact of your AI solution.  
+• 
+Do not share API keys, passwords, credentials, or other sensitive information.  
+• 
+Do not make changes to another team’s project, code, or data without permission.
+
+=== Page 3 ===
+• 
+Do not engage in activities that disrupt the hackathon, other participants, or the 
+evaluation process.  
+ 
+5. Submission Requirements 
+• 
+Upload the following on the GitHub repository: 
+o Source code & deployment files. 
+o Documentation (README with steps to run/deploy) 
+• 
+Submit a presentation (PPT) as per the given template via Google Form, covering: 
+o Problem Statement 
+o Proposed Solution & Architecture 
+o Implementation using IBM Cloud 
+o Demo Screenshots/Video (if applicable)

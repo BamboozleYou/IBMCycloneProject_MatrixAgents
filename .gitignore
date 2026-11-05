@@ -1,0 +1,41 @@
+# Reference media (large files)
+reference/*.mp4
+reference/*.pptx
+reference/*.pdf
+reference/*.docx
+.streamlit/secrets.toml
+
+# Secrets — never commit
+.env
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Databases
+*.db
+
+# ChromaDB persisted data
+chroma_db/
+
+# Logs
+logs/
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Build / dist
+dist/
+build/
+*.egg-info/

@@ -1,0 +1,85 @@
+=== Slide 1 ===
+Edunet Hackathon in collaboration with IBM SkillsBuild on IBM Bob
+
+=== Slide 2 ===
+Methodology
+Collect farm, soil, water, weather and crop data. Analyze EC, pH, moisture and temperature parameters.
+Use AI/ML to detect anomalies and predict salinity risk. IBM Granite explains risks and generates farm-specific recommendations. Continuous monitoring enables early intervention and decision support.
+IBM TOOLS USED
+IBM Granite – AI reasoning, prediction explanation and recommendations
+IBM Bob – AI-assisted development
+IBM Cloud – Cloud-based application infrastructure
+Agentic AI – Multi-agent orchestration and decision support
+.
+Conclusion and Demonstration
+Impact of the Project Implimantation for example (" If farmers used my project the ratio of Farmers will decrease up to 20%.): Salinity Shield AI transforms conventional reactive farming into predictive farming by detecting salinity risks early, forecasting future risks, explaining the causes, and providing actionable, farm-specific recommendations. The prototype demonstrates Farm Health & Risk Dashboard for real-time risk scoring, Farm Intelligence for EC, risk and forecasts, Multi-Farm Management for monitoring multiple farms and alerts, and AI Advisor & What-If Simulator for scenario analysis and intelligent recommendations..
+Desai Dhyan Nileshkumar
+Darshan Bhaveshkumar Suthar
+Vyas Vraj Jayeshbhai
+Team : Innovation HUB
+Institute: Sardar Patel College of Engineering
+Project: Smart Salinity Ingress & Coastal Farmland Protection Advisor
+Need of Project (Explanation with figures for example "in the last 2025 40% farmers affacted due to salinity" : Salinity Shield AI focuses on early detection and prediction of soil salinity risks in coastal farmland using AI/ML.​It provides farm-specific alerts, explanations, and actionable recommendations to help farmers prevent salinity-related crop damage​
+
+=== Slide 3 ===
+Development with IBM Bob
+1  REQUIREMENTS
+Capture and clarify project goals, constraints, and acceptance criteria with Bob.
+2  BOB CREATES PLAN
+Bob generates a structured, step-by-step development plan with file structure and dependencies.
+3  REVIEW & REFINE
+Team reviews, adjusts, and approves the plan before any code is generated.
+4  CODE GENERATION
+Bob generates backend Python/FastAPI code, React TypeScript UI, and agent logic.
+5  REVIEW OUTPUT
+Team reviews generated code for correctness, style, and completeness.
+6  RUN & VALIDATE
+Run the application end-to-end and validate against the original requirements.
+7  BOB EXPLAINS
+Bob explains the implementation decisions and guides the team through the codebase.
+8  QUALITY & TESTS
+Bob generates tests, identifies edge cases, and suggests quality improvements.
+9  DOCUMENTATION
+Bob auto-generates README, API docs, and inline code documentation.
+
+=== Slide 4 ===
+IBM Bob — Files & Code Generated
+IBM Bob — Project File Structure
+[Screenshot: Bob-generated project file structure — backend modules, API routes, agent files, and frontend components]
+IBM Bob — Code Generation Session
+[Screenshot: Bob generating implementation code for water management logic, with inline explanations]
+
+=== Slide 5 ===
+Features of the Project
+MULTI-AGENT AI SYSTEM
+8 specialized agents collaborate through an orchestrator to simultaneously tackle groundwater, drought, crop, recharge, water budgeting, and reporting challenges.
+No other system combines multi-agent AI with village-level explainable recommendations.
+VILLAGE WATER HEALTH SCORE
+Converts groundwater, rainfall, and demand data into a simple 0–100 health index — fully explainable.
+WHAT-IF WATER SIMULATOR
+Test scenarios — crop switching, reduced extraction — before committing to real-world action.
+SMART CROP ADVISORY
+Recommends water-efficient and drought-tolerant crops based on current, localized water conditions.
+RISK-TO-ACTION INTELLIGENCE
+Goes beyond detection — converts every drought and depletion insight into a prioritized action plan.
+
+=== Slide 6 ===
+Novelty & Future Scope
+NOVELTY & UNIQUENESS
+Village-Level Intelligence
+Hyper-local analysis and recommendations for each specific village, not just regional averages.
+Predictive Alerts
+Early detection of drought and groundwater depletion risks before they become irreversible.
+Explainable AI
+Every recommendation includes reason, confidence score, data source, and known limitations.
+Action-Oriented Output
+Converts complex data insights directly into practical decisions and prioritized action plans.
+FUTURE SCOPE
+Advanced Prediction
+Improve drought and groundwater forecasting using richer historical datasets and ML models.
+Mobile App for Farmers
+Smartphone app delivering actionable alerts and recommendations directly to farmers.
+GIS-Based Planning
+Integrate geospatial maps for visual watershed-level drought and water resource planning.
+Scale to Drought-Prone Regions
+Expand the platform to other water-stressed regions across India and beyond.

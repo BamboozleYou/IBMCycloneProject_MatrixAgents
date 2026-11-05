@@ -1,0 +1,25 @@
+# Python 3.12
+# Core LLM + routing
+litellm>=1.108.0
+
+# Quantum
+qiskit==1.2.4
+qiskit-aer==0.15.0
+qiskit-algorithms==0.3.1
+qiskit-optimization==0.6.1
+
+# Vector DB + embeddings
+chromadb==0.5.20
+sentence-transformers==3.3.1
+
+# Dashboard
+streamlit==1.40.2
+pandas==2.2.3
+
+# Logging / config
+structlog==24.4.0
+pyyaml>=6.0.3
+
+# Dev / test
+pytest==8.3.4
+python-dotenv==1.0.1

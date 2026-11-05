@@ -1,0 +1,42 @@
+[
+  {
+    "id": "cyclone_001",
+    "name": "Amphan",
+    "year": 2020,
+    "category": "Super Cyclonic Storm",
+    "landfall_region": "West Bengal, India",
+    "summary": "Amphan made landfall near Digha, West Bengal on 20 May 2020 as a super cyclonic storm with 3-minute sustained winds of 160 km/h. It caused catastrophic storm surge flooding in the Sundarbans delta, displaced 4.9 million people, and caused approximately $13.2 billion in damage. Over 100 fatalities were recorded across West Bengal and Bangladesh."
+  },
+  {
+    "id": "cyclone_002",
+    "name": "Fani",
+    "year": 2019,
+    "category": "Extremely Severe Cyclonic Storm",
+    "landfall_region": "Odisha, India",
+    "summary": "Fani made landfall near Puri, Odisha on 3 May 2019 with 3-minute sustained winds of 185 km/h. It was the strongest cyclone to hit Odisha in 20 years. A pre-emptive mass evacuation of 1.2 million people reduced fatalities to 64 in India. Storm surge of 1.5 m inundated coastal districts. Total damage exceeded $8.1 billion."
+  },
+  {
+    "id": "cyclone_003",
+    "name": "Phailin",
+    "year": 2013,
+    "category": "Very Severe Cyclonic Storm",
+    "landfall_region": "Odisha, India",
+    "summary": "Phailin made landfall near Gopalpur, Odisha on 12 October 2013 with 3-minute sustained winds of 220 km/h at peak intensity. India evacuated nearly 1 million people before landfall. Storm surge exceeded 3 m in some coastal areas. Despite its intensity, only 45 deaths were recorded due to the large-scale evacuation, demonstrating effective disaster preparedness."
+  },
+  {
+    "id": "cyclone_004",
+    "name": "Hudhud",
+    "year": 2014,
+    "category": "Very Severe Cyclonic Storm",
+    "landfall_region": "Andhra Pradesh, India",
+    "summary": "Hudhud made landfall near Visakhapatnam, Andhra Pradesh on 12 October 2014 with 3-minute sustained winds of 185 km/h. It caused severe structural damage across Visakhapatnam city including uprooting of trees, power failures, and damage to the port. Over 120 deaths were recorded and damage was estimated at $7 billion. The cyclone weakened over the Himalayas and caused heavy snowfall."
+  },
+  {
+    "id": "cyclone_005",
+    "name": "Ockhi",
+    "year": 2017,
+    "category": "Very Severe Cyclonic Storm",
+    "landfall_region": "Lakshadweep Islands, India",
+    "summary": "Ockhi formed in the Arabian Sea on 29 November 2017, unusually late in the season, and struck the Kerala and Tamil Nadu coasts before intensifying rapidly. It caused the deaths of over 245 fishermen who were at sea and 61 people on land. The storm surge and high waves battered the Thiruvananthapuram and Kanyakumari coasts. Its unusual trajectory and rapid intensification caught many off-guard."
+  }
+]
