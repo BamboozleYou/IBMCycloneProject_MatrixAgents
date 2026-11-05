@@ -15,6 +15,7 @@ sentence-transformers==3.3.1
 # Dashboard
 streamlit==1.40.2
 pandas==2.2.3
+plotly==5.24.1
 
 # Logging / config
 structlog==24.4.0

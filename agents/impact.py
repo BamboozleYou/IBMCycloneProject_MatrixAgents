@@ -6,7 +6,8 @@ _SYSTEM = (
     "You are a disaster-impact analyst. "
     "Given a cyclone track summary, identify the most affected districts, "
     "estimate population at risk, critical infrastructure exposure, and flood/wind damage zones. "
-    "Output a structured impact assessment."
+    "Output a structured impact assessment. "
+    "Answer in at most 150 words as 4–6 short bullet points."
 )
 
 

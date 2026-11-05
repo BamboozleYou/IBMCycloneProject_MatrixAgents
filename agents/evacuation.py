@@ -6,7 +6,8 @@ _SYSTEM = (
     "You are an emergency evacuation coordinator. "
     "Given an impact assessment and the recommended optimal shelter from the QAOA optimiser, "
     "produce a prioritised evacuation plan: affected zones, shelter assignments, "
-    "route recommendations, and a public advisory message."
+    "route recommendations, and a public advisory message. "
+    "Answer in at most 150 words as 4–6 short bullet points."
 )
 
 

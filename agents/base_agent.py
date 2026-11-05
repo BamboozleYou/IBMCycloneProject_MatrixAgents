@@ -3,7 +3,7 @@ from gateway import litellm_router
 
 
 class BaseAgent:
-    def __init__(self, name: str, model: str, system_prompt: str, max_tokens: int = 512):
+    def __init__(self, name: str, model: str, system_prompt: str, max_tokens: int = 1024):
         self.name = name
         self.model = model
         self.system_prompt = system_prompt
