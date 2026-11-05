@@ -31,6 +31,7 @@ def render_kpi_row(results: dict | None = None, scenario: dict | None = None) ->
 
     wind = float(wj.get("peak_wind_kmh") or cd.get("wind_kmh") or 0)
     imd_lbl, _ = imd_label(wind)
+    imd_display = imd_lbl if wind else "—"
     confidence = wj.get("confidence", "—")
     conf_str = f"{confidence:.0%}" if isinstance(confidence, float) else "—"
 
@@ -43,10 +44,9 @@ def render_kpi_row(results: dict | None = None, scenario: dict | None = None) ->
     except Exception:
         pass
 
-    cols = st.columns(8)
     items = [
         ("Cyclone",        cd.get("name", "—"),                 ""),
-        ("IMD Class",      imd_lbl,                             ""),
+        ("IMD Class",      imd_display,                         ""),
         ("Max Wind",       f"{wind:.0f} km/h" if wind else "—", ""),
         ("Landfall",       cd.get("landfall", "—"),              ""),
         ("T-minus",        f"{wj.get('time_to_landfall_h', '—')}h", "to landfall"),
@@ -54,5 +54,8 @@ def render_kpi_row(results: dict | None = None, scenario: dict | None = None) ->
         ("Confidence",     conf_str,                             "model output"),
         ("LLM Cost",       f"${total_usd:.4f}",                  "cumulative"),
     ]
-    for col, (lbl, val, sub) in zip(cols, items):
+    row1 = st.columns(4)
+    row2 = st.columns(4)
+    all_cols = row1 + row2
+    for col, (lbl, val, sub) in zip(all_cols, items):
         col.markdown(kpi_card(lbl, val, sub), unsafe_allow_html=True)

@@ -70,3 +70,4 @@ def render() -> None:
         st.success("No pending approvals — all actions reviewed.")
     else:
         st.info("Run a scenario first (Agent Pipeline page).")
+render()

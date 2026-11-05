@@ -21,7 +21,7 @@ def render() -> None:
     render_kpi_row(results, scenario)
     st.divider()
 
-    from mcp.qaoa_shelter import _load_shelters, _brute_force, _objective, VILLAGE_ZONES, NUM_SELECT
+    from mcp.qaoa_shelter import _load_shelters, _brute_force, build_qp, VILLAGE_ZONES, NUM_SELECT
 
     shelters  = _load_shelters()
     classical = _brute_force(shelters)
@@ -37,13 +37,14 @@ def render() -> None:
             "method":          "brute_force_fallback",
             "objective_value": classical["objective_value"],
             "sample_probs":    {},
+            "capacity_ok":     classical["capacity_ok"],
         }
         qaoa_status = f"⚠️ Fallback ({exc.__class__.__name__}: {str(exc)[:60]})"
 
     match = set(quantum.get("selected", [])) == set(classical.get("selected", []))
 
     # ── Metrics ───────────────────────────────────────────────────────────────
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("QAOA Selected",
               ", ".join(quantum.get("selected", [quantum["best_shelter"]])),
               f"obj = {quantum['objective_value']:.0f}")
@@ -52,58 +53,76 @@ def render() -> None:
               f"obj = {classical['objective_value']:.0f}")
     c3.metric("Agreement", "✅ Match" if match else "❌ Differs")
     c4.metric("QAOA Method", quantum["method"])
+    c5.metric("Capacity OK", "✅ Yes" if quantum.get("capacity_ok") else "❌ No")
     st.caption(qaoa_status)
     st.divider()
 
     col_left, col_right = st.columns(2)
 
-    # ── Per-shelter distance-score bar ────────────────────────────────────────
+    # ── Per-shelter QP objective bar ──────────────────────────────────────────
     with col_left:
-        st.subheader("Distance Score per Shelter")
+        st.subheader("QP Objective Score per Shelter")
+        n = len(shelters)
+        qp = build_qp(shelters)
+        # single-shelter objective (feasibility aside)
+        single_vals = []
+        for i in range(n):
+            x = [1.0 if j == i else 0.0 for j in range(n)]
+            single_vals.append(qp.objective.evaluate(x))
+
         df_s = pd.DataFrame(shelters)
-        df_s["obj"] = df_s.apply(lambda r: _objective([r.to_dict()]), axis=1)
+        df_s["qp_obj"] = single_vals
         selected_set = set(quantum.get("selected", [quantum["best_shelter"]]))
-        colours = [ACCENT if n in selected_set else "#393939" for n in df_s["name"]]
+        colours = [ACCENT if row["name"] in selected_set else "#393939"
+                   for _, row in df_s.iterrows()]
 
         fig_obj = go.Figure(go.Bar(
-            x=df_s["name"], y=df_s["obj"], marker_color=colours,
-            hovertemplate="%{x}<br>pop×km: %{y:.0f}<extra></extra>",
+            x=df_s["name"], y=df_s["qp_obj"], marker_color=colours,
+            hovertemplate="%{x}<br>QP obj: %{y:.0f}<extra></extra>",
         ))
         fig_obj.update_layout(
             paper_bgcolor=SURFACE, plot_bgcolor="#0a0a0a",
             font=dict(color="#f4f4f4"),
             xaxis=dict(tickangle=-25, color=MUTED),
-            yaxis=dict(title="pop × km (lower=better)", color=MUTED),
+            yaxis=dict(title="QP objective (lower=better)", color=MUTED),
             height=320, margin=dict(l=10, r=10, t=10, b=80),
         )
         st.plotly_chart(fig_obj, use_container_width=True)
 
-    # ── Bitstring probability histogram ───────────────────────────────────────
+    # ── Top-8 bitstring probability histogram ─────────────────────────────────
     with col_right:
-        st.subheader("QAOA Bitstring Distribution")
+        st.subheader("QAOA Top-8 Bitstring Distribution")
         sample_probs: dict[str, float] = quantum.get("sample_probs", {})
 
         if sample_probs:
-            bitstrings = list(sample_probs.keys())
-            probs      = list(sample_probs.values())
+            # already trimmed to top 8 in _qaoa; sort descending for display
+            sorted_items = sorted(sample_probs.items(), key=lambda kv: kv[1], reverse=True)
+            bitstrings = [k for k, _ in sorted_items]
+            probs      = [v for _, v in sorted_items]
         else:
-            # Objective-weighted distribution over all valid k-combinations
+            # Derive top-8 from QP objective over all k-combinations
             from itertools import combinations as _comb
-            n = len(shelters)
             combos = list(_comb(range(n), NUM_SELECT))
-            raw_scores = [1.0 / max(_objective([shelters[i] for i in c]), 1e-3) for c in combos]
+            raw_scores = []
+            for c in combos:
+                x = [1.0 if i in c else 0.0 for i in range(n)]
+                raw_scores.append(1.0 / max(qp.objective.evaluate(x) + 1e-3, 1e-3))
             total_s = sum(raw_scores)
-            bitstrings = ["".join("1" if i in c else "0" for i in range(n)) for c in combos]
-            probs = [s / total_s for s in raw_scores]
+            all_bs = ["".join("1" if i in c else "0" for i in range(n)) for c in combos]
+            all_probs = [s / total_s for s in raw_scores]
+            # sort and keep top 8
+            top8 = sorted(zip(all_bs, all_probs), key=lambda kv: kv[1], reverse=True)[:8]
+            bitstrings = [k for k, _ in top8]
+            probs = [v for _, v in top8]
 
+        # Determine which bitstring corresponds to the QAOA-selected shelters
         selected_names_q = set(quantum.get("selected", [quantum["best_shelter"]]))
-        selected_bs_idx = {
-            i for i, bs in enumerate(bitstrings)
-            if all((bs[j] == "1") == (shelters[j]["name"] in selected_names_q)
-                   for j in range(len(shelters)))
-        }
-        bar_colours = [ACCENT if i in selected_bs_idx else "#393939"
-                       for i in range(len(bitstrings))]
+        def _bs_matches(bs: str) -> bool:
+            return all(
+                (bs[j] == "1") == (shelters[j]["name"] in selected_names_q)
+                for j in range(n)
+            )
+        bar_colours = [ACCENT if _bs_matches(bs) else "#393939" for bs in bitstrings]
 
         fig_hist = go.Figure(go.Bar(
             x=bitstrings, y=probs,
@@ -113,7 +132,7 @@ def render() -> None:
         fig_hist.update_layout(
             paper_bgcolor=SURFACE, plot_bgcolor="#0a0a0a",
             font=dict(color="#f4f4f4"),
-            xaxis=dict(title="Bitstring", color=MUTED, tickangle=-45),
+            xaxis=dict(title="Bitstring (top 8)", color=MUTED, tickangle=-45),
             yaxis=dict(title="Probability", color=MUTED),
             height=320, margin=dict(l=10, r=10, t=10, b=80),
         )
@@ -125,29 +144,13 @@ def render() -> None:
         from qiskit_algorithms import QAOA
         from qiskit_algorithms.optimizers import COBYLA
         from qiskit.primitives import Sampler
-        from qiskit_optimization import QuadraticProgram
         from qiskit_optimization.converters import QuadraticProgramToQubo
-        from mcp.qaoa_shelter import _haversine_km
 
-        n = len(shelters)
-        qp = QuadraticProgram(name="shelter_cover")
-        for i in range(n):
-            qp.binary_var(name=f"x{i}")
-        avg_pop = sum(z["pop"] for z in VILLAGE_ZONES) / len(VILLAGE_ZONES)
-        linear_c = {
-            f"x{i}": sum(_haversine_km(z["lat"], z["lon"], float(s["lat"]), float(s["lon"]))
-                         for z in VILLAGE_ZONES) / len(VILLAGE_ZONES) * avg_pop
-            for i, s in enumerate(shelters)
-        }
-        qp.minimize(linear=linear_c)
-        qp.linear_constraint(linear={f"x{i}": 1 for i in range(n)}, sense="==",
-                              rhs=NUM_SELECT, name="pick_k")
         qubo = QuadraticProgramToQubo().convert(qp)
         sampler = Sampler()
-        circuit = QAOA(sampler=sampler, optimizer=COBYLA(), reps=1).ansatz
+        circuit = QAOA(sampler=sampler, optimizer=COBYLA(), reps=2).ansatz
         st.code(str(circuit.draw(output="text")), language="text")
     except Exception as exc:
-        n = len(shelters)
         st.code(
             "q_0: ──H──Rz(γ)──Ry(β)──\n"
             + "\n".join(f"q_{i}: ──H──Rz(γ)──Ry(β)──" for i in range(1, n))
@@ -200,3 +203,6 @@ def render() -> None:
     )
     df_disp["Selected (QAOA)"] = df_disp["Shelter"].isin(selected_set)
     st.dataframe(df_disp, use_container_width=True, hide_index=True)
+
+
+render()

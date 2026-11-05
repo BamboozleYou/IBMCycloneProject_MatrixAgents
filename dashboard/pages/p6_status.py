@@ -94,3 +94,4 @@ def render() -> None:
         st.code(str(keys), language="python")
     else:
         st.info("Session state is empty.")
+render()

@@ -80,3 +80,4 @@ def render() -> None:
         st.info("No cost data yet — run a scenario first.")
     except Exception as exc:
         st.error(f"Could not read cost data: {exc}")
+render()

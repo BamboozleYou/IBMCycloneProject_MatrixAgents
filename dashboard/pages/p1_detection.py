@@ -20,16 +20,37 @@ _PRESETS = {
         "name": "Fani-2", "landfall": "Odisha Coast",
         "wind_kmh": 185, "radius_km": 130, "pop_at_risk_k": 450,
         "lat0": 19.5, "lon0": 87.5, "lat_land": 19.8, "lon_land": 85.8,
+        "districts": [
+            {"name": "Puri",           "lat": 19.81, "lon": 85.83},
+            {"name": "Khurda",         "lat": 20.17, "lon": 85.61},
+            {"name": "Jagatsinghpur",  "lat": 20.25, "lon": 86.17},
+            {"name": "Kendrapara",     "lat": 20.50, "lon": 86.42},
+            {"name": "Balasore",       "lat": 21.49, "lon": 86.93},
+        ],
     },
     "Andhra SCS": {
         "name": "Hudhud-2", "landfall": "Visakhapatnam",
         "wind_kmh": 140, "radius_km": 90, "pop_at_risk_k": 280,
         "lat0": 17.0, "lon0": 84.5, "lat_land": 17.7, "lon_land": 83.3,
+        "districts": [
+            {"name": "Visakhapatnam", "lat": 17.69, "lon": 83.22},
+            {"name": "Vizianagaram",  "lat": 18.12, "lon": 83.40},
+            {"name": "Srikakulam",    "lat": 18.30, "lon": 83.90},
+            {"name": "East Godavari", "lat": 17.00, "lon": 81.78},
+            {"name": "West Godavari", "lat": 16.92, "lon": 81.37},
+        ],
     },
     "Gujarat CS": {
         "name": "Vayu-2", "landfall": "Veraval",
         "wind_kmh": 100, "radius_km": 65, "pop_at_risk_k": 120,
         "lat0": 21.5, "lon0": 70.5, "lat_land": 20.9, "lon_land": 70.4,
+        "districts": [
+            {"name": "Gir Somnath",  "lat": 20.91, "lon": 70.36},
+            {"name": "Junagadh",     "lat": 21.52, "lon": 70.46},
+            {"name": "Porbandar",    "lat": 21.64, "lon": 69.61},
+            {"name": "Amreli",       "lat": 21.60, "lon": 71.22},
+            {"name": "Bhavnagar",    "lat": 21.76, "lon": 72.15},
+        ],
     },
     "Manual": {},
 }
@@ -37,10 +58,10 @@ _PRESETS = {
 
 def render() -> None:
     st.title("🌩 Cyclone Detection")
+    kpi_slot = st.container()
 
     results  = st.session_state.get("last_results")
     scenario = st.session_state.get("scenario", {})
-    render_kpi_row(results, scenario)
     st.divider()
 
     # ── Preset selector ───────────────────────────────────────────────────────
@@ -64,6 +85,9 @@ def render() -> None:
         }.items()},
     }
     st.session_state["scenario"] = scenario_data
+
+    with kpi_slot:
+        render_kpi_row(results, scenario_data)
 
     # ── Map from weather_json if available ────────────────────────────────────
     weather_json = (results or {}).get("weather_json")
@@ -140,21 +164,40 @@ def render() -> None:
             height=280, margin=dict(l=10, r=10, t=30, b=10),
         )
         st.plotly_chart(fig_wp, use_container_width=True)
+        st.caption("Illustrative intensity profile (model-derived)")
 
     # ── District risk bar ─────────────────────────────────────────────────────
     st.subheader("District Risk")
-    import plotly.express as px
-    districts   = ["Puri", "Khurda", "Jagatsinghpur", "Kendrapara", "Bhadrak", "Balasore"]
-    risk_scores = [95, 88, 82, 70, 60, 45]
-    fig_bar = px.bar(x=risk_scores, y=districts, orientation="h",
-                     labels={"x": "Risk Score", "y": "District"},
-                     color=risk_scores,
-                     color_continuous_scale=[[0, GREEN], [0.5, "#f1c21b"], [1, RED]])
-    fig_bar.update_layout(paper_bgcolor=SURFACE, plot_bgcolor="#0a0a0a",
-                          font=dict(color="#f4f4f4"), showlegend=False,
-                          height=260, margin=dict(l=10,r=10,t=10,b=10),
-                          coloraxis_showscale=False)
-    st.plotly_chart(fig_bar, use_container_width=True)
+    if preset_name == "Manual":
+        st.info("Select a named preset to see district risk scores.")
+    else:
+        import math
+        import plotly.express as px
+        preset_districts = preset.get("districts", [])
+        lon_land = scenario_data["lon_land"]
+        lat_land = scenario_data["lat_land"]
+        R = 6371.0  # Earth radius km
+
+        def _dist_km(lat1, lon1, lat2, lon2):
+            dlat = math.radians(lat2 - lat1)
+            dlon = math.radians(lon2 - lon1)
+            a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+            return R * 2 * math.asin(math.sqrt(a))
+
+        district_names = [d["name"] for d in preset_districts]
+        risk_scores = [
+            round(100 * min(1, wind_kmh / 220) * math.exp(-_dist_km(d["lat"], d["lon"], lat_land, lon_land) / radius))
+            for d in preset_districts
+        ]
+        fig_bar = px.bar(x=risk_scores, y=district_names, orientation="h",
+                         labels={"x": "Risk Score", "y": "District"},
+                         color=risk_scores,
+                         color_continuous_scale=[[0, GREEN], [0.5, "#f1c21b"], [1, RED]])
+        fig_bar.update_layout(paper_bgcolor=SURFACE, plot_bgcolor="#0a0a0a",
+                              font=dict(color="#f4f4f4"), showlegend=False,
+                              height=260, margin=dict(l=10,r=10,t=10,b=10),
+                              coloraxis_showscale=False)
+        st.plotly_chart(fig_bar, use_container_width=True)
 
     # ── Similar cyclones from ChromaDB ────────────────────────────────────────
     st.divider()
@@ -173,3 +216,4 @@ def render() -> None:
         except Exception:
             similar = []
     render_similar_cyclones(similar or [])
+render()

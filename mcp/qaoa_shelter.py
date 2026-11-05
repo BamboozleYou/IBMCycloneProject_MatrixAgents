@@ -8,6 +8,7 @@ Returns:
         "method":       str,
         "objective_value": float,
         "sample_probs": dict[str, float],  # bitstring → probability from QAOA
+        "capacity_ok":  bool,
     }
 """
 from __future__ import annotations
@@ -77,41 +78,102 @@ def _capacity_ok(selected_shelters: list[dict]) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Shared QuadraticProgram builder
+# ---------------------------------------------------------------------------
+
+def build_qp(shelters: list[dict]):
+    """Build the QuadraticProgram used by both QAOA and brute-force evaluation.
+
+    Objective (minimise):
+      Linear  : x_i = d_i / max(d) − 1.5 × capacity_i / tot
+                where d_i = sum(zone_pop × dist(zone, shelter_i)) / tot
+                and   tot = total zone population
+      Quadratic: for each pair i < j,
+                  0.5 × max(0, 1 − dist_km(i,j) / 40)
+
+    Constraint: exactly NUM_SELECT shelters selected.
+    """
+    from qiskit_optimization import QuadraticProgram
+
+    n = len(shelters)
+    tot = sum(z["pop"] for z in VILLAGE_ZONES)
+
+    qp = QuadraticProgram(name="shelter_cover")
+
+    for i in range(n):
+        qp.binary_var(name=f"x{i}")
+
+    # --- linear coefficients ---
+    d_vals: list[float] = []
+    for s in shelters:
+        d_i = sum(
+            z["pop"] * _haversine_km(z["lat"], z["lon"], float(s["lat"]), float(s["lon"]))
+            for z in VILLAGE_ZONES
+        ) / tot
+        d_vals.append(d_i)
+
+    max_d = max(d_vals) if d_vals else 1.0
+
+    linear: dict[str, float] = {}
+    for i, s in enumerate(shelters):
+        linear[f"x{i}"] = d_vals[i] / max_d - 1.5 * float(s["capacity"]) / tot
+
+    # --- quadratic coefficients (overlap penalty) ---
+    quadratic: dict[tuple[str, str], float] = {}
+    for i in range(n):
+        for j in range(i + 1, n):
+            dist_ij = _haversine_km(
+                float(shelters[i]["lat"]), float(shelters[i]["lon"]),
+                float(shelters[j]["lat"]), float(shelters[j]["lon"]),
+            )
+            penalty = 0.5 * max(0.0, 1.0 - dist_ij / 40.0)
+            if penalty > 0:
+                quadratic[(f"x{i}", f"x{j}")] = penalty
+
+    qp.minimize(linear=linear, quadratic=quadratic)
+
+    # Constraint: select exactly NUM_SELECT
+    qp.linear_constraint(
+        linear={f"x{i}": 1 for i in range(n)},
+        sense="==",
+        rhs=NUM_SELECT,
+        name="pick_k",
+    )
+
+    return qp
+
+
+# ---------------------------------------------------------------------------
 # Brute-force (exhaustive over all C(n,k) combinations)
 # ---------------------------------------------------------------------------
 
 def _brute_force(shelters: list[dict]) -> dict:
-    """Exhaustively try all combinations of NUM_SELECT shelters."""
+    """Exhaustively evaluate build_qp objective for every combination of NUM_SELECT."""
     from itertools import combinations
 
-    best_combo: list[dict] | None = None
+    n = len(shelters)
+    qp = build_qp(shelters)
+
+    best_idx: list[int] | None = None
     best_val = float("inf")
 
-    for combo in combinations(shelters, NUM_SELECT):
-        combo_list = list(combo)
-        if not _capacity_ok(combo_list):
-            continue
-        val = _objective(combo_list)
+    for combo in combinations(range(n), NUM_SELECT):
+        x = [1.0 if i in combo else 0.0 for i in range(n)]
+        val = qp.objective.evaluate(x)
         if val < best_val:
             best_val = val
-            best_combo = combo_list
+            best_idx = list(combo)
 
-    # If no feasible combo, relax capacity constraint
-    if best_combo is None:
-        for combo in combinations(shelters, NUM_SELECT):
-            combo_list = list(combo)
-            val = _objective(combo_list)
-            if val < best_val:
-                best_val = val
-                best_combo = combo_list
+    selected_shelters = [shelters[i] for i in (best_idx or [])]
+    selected_names = [s["name"] for s in selected_shelters]
 
-    selected_names = [s["name"] for s in (best_combo or [])]
     return {
         "best_shelter":    selected_names[0] if selected_names else "—",
         "selected":        selected_names,
         "method":          "brute_force",
         "objective_value": float(best_val),
         "sample_probs":    {},
+        "capacity_ok":     _capacity_ok(selected_shelters),
     }
 
 
@@ -123,64 +185,49 @@ def _qaoa(shelters: list[dict]) -> dict:
     from qiskit_algorithms import QAOA
     from qiskit_algorithms.optimizers import COBYLA
     from qiskit.primitives import Sampler
-    from qiskit_optimization import QuadraticProgram
     from qiskit_optimization.algorithms import MinimumEigenOptimizer
+    from qiskit_algorithms.utils import algorithm_globals
+
+    algorithm_globals.random_seed = 7
 
     n = len(shelters)
-    qp = QuadraticProgram(name="shelter_cover")
+    qp = build_qp(shelters)
 
-    for i in range(n):
-        qp.binary_var(name=f"x{i}")
-
-    # Objective: minimise weighted distance (penalty for each zone)
-    # Linear: sum_i  x_i * (avg distance from zone to shelter_i × avg_pop)
-    avg_pop = sum(z["pop"] for z in VILLAGE_ZONES) / len(VILLAGE_ZONES)
-    linear: dict[str, float] = {}
-    for i, s in enumerate(shelters):
-        avg_dist = sum(
-            _haversine_km(z["lat"], z["lon"], float(s["lat"]), float(s["lon"]))
-            for z in VILLAGE_ZONES
-        ) / len(VILLAGE_ZONES)
-        linear[f"x{i}"] = avg_dist * avg_pop
-
-    qp.minimize(linear=linear)
-
-    # Constraint: select exactly NUM_SELECT shelters
-    qp.linear_constraint(
-        linear={f"x{i}": 1 for i in range(n)},
-        sense="==",
-        rhs=NUM_SELECT,
-        name="pick_k",
-    )
-
-    sampler = Sampler()
-    qaoa = QAOA(sampler=sampler, optimizer=COBYLA(), reps=1)
+    sampler = Sampler(options={"seed": 7})
+    qaoa = QAOA(sampler=sampler, optimizer=COBYLA(maxiter=200), reps=2)
     optimizer = MinimumEigenOptimizer(qaoa)
     result = optimizer.solve(qp)
 
-    # Extract sample probabilities from the raw MinimumEigenSolverResult
+    # Extract sample probabilities: convert Qiskit little-endian integer keys
+    # to bitstrings with format(k, f'0{n}b')[::-1]
     sample_probs: dict[str, float] = {}
     try:
         raw = result.min_eigen_solver_result
-        # samples is a list of SparseVectorStateFn or similar; try samples attribute
-        samples = getattr(raw, "eigenstate", None) or getattr(raw, "best_measurement", None)
         if hasattr(raw, "samples"):
             for s in raw.samples:
                 bs = "".join(str(int(b)) for b in s.x)
                 sample_probs[bs] = float(s.probability)
         elif hasattr(raw, "eigenstate") and hasattr(raw.eigenstate, "items"):
-            for bs, amp in raw.eigenstate.items():
-                p = abs(amp) ** 2
+            for k, v in raw.eigenstate.items():
+                p = float(v)
                 if p > 1e-6:
+                    bs = format(k, f"0{n}b")[::-1]
                     sample_probs[bs] = p
     except Exception:
         pass
+
+    # Keep only the top 8 by probability
+    sample_probs = dict(
+        sorted(sample_probs.items(), key=lambda kv: kv[1], reverse=True)[:8]
+    )
 
     selected_indices = [i for i, v in enumerate(result.x) if v > 0.5]
     selected_shelters = [shelters[i] for i in selected_indices]
     selected_names = [s["name"] for s in selected_shelters]
 
-    obj_val = _objective(selected_shelters) if selected_shelters else float(result.fval)
+    obj_val = qp.objective.evaluate(
+        [1.0 if i in selected_indices else 0.0 for i in range(n)]
+    ) if selected_indices else float(result.fval)
 
     return {
         "best_shelter":    selected_names[0] if selected_names else "—",
@@ -188,6 +235,7 @@ def _qaoa(shelters: list[dict]) -> dict:
         "method":          "qaoa",
         "objective_value": float(obj_val),
         "sample_probs":    sample_probs,
+        "capacity_ok":     _capacity_ok(selected_shelters),
     }
 
 
@@ -215,11 +263,11 @@ def optimise_shelters(shelters: list[dict] | None = None) -> dict:
 # ---------------------------------------------------------------------------
 
 DEMO_SHELTERS = [
-    {"name": "Community Hall A",  "lat": 19.9, "lon": 85.6, "capacity": 500,  "score": 0.85},
-    {"name": "School Block B",    "lat": 19.7, "lon": 85.9, "capacity": 300,  "score": 0.90},
-    {"name": "Railway Station C", "lat": 20.1, "lon": 86.1, "capacity": 800,  "score": 0.70},
-    {"name": "Temple Complex D",  "lat": 19.5, "lon": 85.4, "capacity": 250,  "score": 0.95},
-    {"name": "Sports Arena E",    "lat": 20.3, "lon": 85.7, "capacity": 1200, "score": 0.75},
+    {"name": "Community Hall A",  "lat": 19.9, "lon": 85.6, "capacity": 5000,  "score": 0.85},
+    {"name": "School Block B",    "lat": 19.7, "lon": 85.9, "capacity": 3000,  "score": 0.90},
+    {"name": "Railway Station C", "lat": 20.1, "lon": 86.1, "capacity": 8000,  "score": 0.70},
+    {"name": "Temple Complex D",  "lat": 19.5, "lon": 85.4, "capacity": 2500,  "score": 0.95},
+    {"name": "Sports Arena E",    "lat": 20.3, "lon": 85.7, "capacity": 12000, "score": 0.75},
 ]
 
 

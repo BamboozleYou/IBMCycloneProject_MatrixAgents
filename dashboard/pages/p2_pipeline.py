@@ -72,7 +72,15 @@ def render() -> None:
 
             sup._run_agent_with_retries = types.MethodType(_patched, sup)
             progress.progress(10, "Running agents…")
-            run_results = sup.run(scenario_data)
+
+            with st.status("Running agents…", expanded=True) as status:
+                def _on_step(name: str, pct: int) -> None:
+                    progress.progress(pct, f"{name} complete")
+                    status.write(f"✅ {name} agent complete ({pct}%)")
+
+                run_results = sup.run(scenario_data, on_step=_on_step)
+                status.update(label="Pipeline complete ✅", state="complete", expanded=False)
+
             st.session_state["last_results"] = run_results
             st.session_state["step_results"] = step_results
             progress.progress(100, "Pipeline complete ✅")
@@ -114,8 +122,9 @@ def render() -> None:
         sr = step_results.get(key, (model_hint, content, 0.0))
         elapsed = sr[2]
         cm = cost_map.get(key, {})
+        model_label = cm.get("model") or sr[0] or model_hint
 
-        with st.expander(f"**{label}** · {sr[0] or model_hint}", expanded=bool(content)):
+        with st.expander(f"**{label}** · {model_label}", expanded=bool(content)):
             mcol1, mcol2, mcol3 = st.columns(3)
             mcol1.metric("Tokens in",  cm.get("tokens_in",  "—"))
             mcol2.metric("Tokens out", cm.get("tokens_out", "—"))
@@ -129,3 +138,4 @@ def render() -> None:
         st.subheader("Weather Agent JSON Output")
         import json
         st.json(wj)
+render()

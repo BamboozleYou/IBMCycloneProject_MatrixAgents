@@ -2,10 +2,11 @@
 from __future__ import annotations
 import time
 from pathlib import Path
+from typing import Callable
 
 import yaml
 
-from agents.weather_track import WeatherTrackAgent
+from agents.weather_track import WeatherTrackAgent, _wind_to_imd
 from agents.impact import ImpactAgent
 from agents.evacuation import EvacuationAgent
 from guardrails.regex_guard import check_input, check_output, GuardError
@@ -58,7 +59,7 @@ class Supervisor:
         raise RuntimeError(f"Agent '{agent.name}' failed after {_MAX_RETRIES + 1} attempts: {last_exc}")
 
     # ------------------------------------------------------------------
-    def run(self, cyclone_data: dict) -> dict:
+    def run(self, cyclone_data: dict, on_step: Callable[[str, int], None] | None = None) -> dict:
         """Run the full pipeline sequentially. Returns result dict."""
         results: dict = {"cyclone_data": cyclone_data}
 
@@ -71,9 +72,12 @@ class Supervisor:
         )
 
         # --- Step 1: WeatherTrack (returns JSON dict) ---
+        wind_kmh = cyclone_data.get("wind_kmh", 0)
+        weather_input = dict(cyclone_data)
+        weather_input["imd_class"] = _wind_to_imd(wind_kmh)
         track_raw = self._run_agent_with_retries(
             self.weather_agent,
-            input_text=str(cyclone_data),
+            input_text=str(weather_input),
             extra_context=rag_context,
         )
         # weather agent now returns a dict; supervisor stored raw str via call_llm path
@@ -86,6 +90,8 @@ class Supervisor:
             track_summary = weather_json.get("summary", track_raw)
         results["track_summary"] = track_summary
         results["weather_json"]  = weather_json
+        if on_step:
+            on_step("Weather", 25)
 
         # RAG: similar past cyclones
         rag_docs2 = self.store.retrieve(
@@ -100,23 +106,31 @@ class Supervisor:
             extra_context=rag_context,
         )
         results["impact_summary"] = impact_summary
+        if on_step:
+            on_step("Impact", 50)
 
         # --- Step 3: QAOA shelter optimisation ---
         shelter_result = optimise_shelters(DEMO_SHELTERS)
         results["shelter_result"] = shelter_result
+        if on_step:
+            on_step("QAOA", 70)
 
         # --- Step 4: Evacuation ---
         evac_policy = self.policies.get("evacuation", {})
+        selected_shelters = shelter_result.get("selected", [shelter_result["best_shelter"]])
         evac_plan = self._run_agent_with_retries(
             self.evacuation_agent,
             input_text=impact_summary,
             extra_context=(
                 f"{rag_context}\n\n"
                 f"Optimal shelter (QAOA): {shelter_result['best_shelter']} "
-                f"[method={shelter_result['method']}, obj={shelter_result['objective_value']}]"
+                f"[method={shelter_result['method']}, obj={shelter_result['objective_value']}]\n"
+                f"All selected shelters: {selected_shelters}"
             ),
         )
         results["evacuation_plan"] = evac_plan
+        if on_step:
+            on_step("Evacuation", 95)
 
         # Set HITL flag from policy
         self.pending_approval = bool(evac_policy.get("require_human_approval", True))
