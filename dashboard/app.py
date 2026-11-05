@@ -16,14 +16,14 @@ inject_css()
 pg = st.navigation(
     {
         "Operations": [
-            st.Page("pages/p1_detection.py",  title="🌩 Cyclone Detection",    default=True),
-            st.Page("pages/p2_pipeline.py",   title="🤖 Agent Pipeline"),
-            st.Page("pages/p3_quantum.py",    title="⚛ Quantum Optimiser"),
-            st.Page("pages/p4_approval.py",   title="✅ Evacuation & Approval"),
+            st.Page("views/p1_detection.py",  title="🌩 Cyclone Detection",    default=True),
+            st.Page("views/p2_pipeline.py",   title="🤖 Agent Pipeline"),
+            st.Page("views/p3_quantum.py",    title="⚛ Quantum Optimiser"),
+            st.Page("views/p4_approval.py",   title="✅ Evacuation & Approval"),
         ],
         "Governance": [
-            st.Page("pages/p5_audit.py",      title="📋 Audit & Costs"),
-            st.Page("pages/p6_status.py",     title="⚙️ System Status"),
+            st.Page("views/p5_audit.py",      title="📋 Audit & Costs"),
+            st.Page("views/p6_status.py",     title="⚙️ System Status"),
         ],
     }
 )
