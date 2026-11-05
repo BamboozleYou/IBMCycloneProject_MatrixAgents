@@ -47,10 +47,10 @@ def render() -> None:
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("QAOA Selected",
               ", ".join(quantum.get("selected", [quantum["best_shelter"]])),
-              f"obj = {quantum['objective_value']:.0f}")
+              f"obj = {quantum['objective_value']:.3f}")
     c2.metric("Classical Selected",
               ", ".join(classical.get("selected", [classical["best_shelter"]])),
-              f"obj = {classical['objective_value']:.0f}")
+              f"obj = {classical['objective_value']:.3f}")
     c3.metric("Agreement", "✅ Match" if match else "❌ Differs")
     c4.metric("QAOA Method", quantum["method"])
     c5.metric("Capacity OK", "✅ Yes" if quantum.get("capacity_ok") else "❌ No")
@@ -78,7 +78,7 @@ def render() -> None:
 
         fig_obj = go.Figure(go.Bar(
             x=df_s["name"], y=df_s["qp_obj"], marker_color=colours,
-            hovertemplate="%{x}<br>QP obj: %{y:.0f}<extra></extra>",
+            hovertemplate="%{x}<br>QP obj: %{y:.3f}<extra></extra>",
         ))
         fig_obj.update_layout(
             paper_bgcolor=SURFACE, plot_bgcolor="#0a0a0a",
